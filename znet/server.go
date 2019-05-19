@@ -1,6 +1,7 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -13,6 +14,16 @@ type Server struct {
 	IPVsersion string
 	IP         string
 	Port       int
+}
+
+// CallBackToClient 定义当前客户端的handle api
+func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
+	fmt.Println("[Conn Handle] CallBackToClient ...")
+	if _, err := conn.Write(data[:cnt]); err != nil {
+		fmt.Println("write back buf err ", err)
+		return errors.New("CallBackToClient error")
+	}
+	return nil
 }
 
 // Start 开启网络服务
@@ -34,6 +45,10 @@ func (s *Server) Start() {
 
 		fmt.Println("start Zinx server ", s.Name, " succ, now listening...")
 
+		// 生成ID
+		var cid uint32
+		cid = 0
+
 		for {
 			conn, err := listenner.AcceptTCP()
 			if err != nil {
@@ -41,23 +56,10 @@ func (s *Server) Start() {
 				continue
 			}
 
-			go func() {
-				for {
-					buf := make([]byte, 512)
-					cnt, err := conn.Read(buf)
-					if err != nil {
-						fmt.Println("recv buf err", err)
-						continue
-					}
+			dealConn := NewConnection(conn, cid, CallBackToClient)
+			cid++
 
-					if _, err = conn.Write(buf[:cnt]); err != nil {
-						if err != nil {
-							fmt.Println("write back buf err", err)
-							continue
-						}
-					}
-				}
-			}()
+			go dealConn.Start()
 		}
 	}()
 }
