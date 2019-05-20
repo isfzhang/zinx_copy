@@ -74,7 +74,7 @@ func ClientTest() {
 
 // TestServer 模块的测试函数
 func TestServer(t *testing.T) {
-	s := NewServer("[zinx v0.3]")
+	s := NewServer()
 	s.AddRouter(&PingRouter{})
 	go ClientTest()
 

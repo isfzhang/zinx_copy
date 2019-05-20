@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"time"
+	"zinx/utils"
 	"zinx/ziface"
 )
 
@@ -17,21 +18,23 @@ type Server struct {
 }
 
 // NewServer 创建一个服务器句柄
-func NewServer(name string) ziface.IServer {
+func NewServer() ziface.IServer {
+	utils.GlobalObject.Reload()
+
 	s := &Server{
-		Name:       name,
+		Name:       utils.GlobalObject.Name,
 		IPVsersion: "tcp4",
-		IP:         "0.0.0.0",
-		Port:       5704,
+		IP:         utils.GlobalObject.Host,
+		Port:       utils.GlobalObject.TCPPort,
 		Router:     nil,
 	}
-
 	return s
 }
 
 // Start 开启网络服务
 func (s *Server) Start() {
 	fmt.Printf("[START] Server listenner at IP: %s, Port %d, is starting\n", s.IP, s.Port)
+	fmt.Println(utils.GlobalObject.Maxconn)
 
 	go func() {
 		addr, err := net.ResolveTCPAddr(s.IPVsersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
