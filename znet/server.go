@@ -1,7 +1,6 @@
 package znet
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -14,16 +13,20 @@ type Server struct {
 	IPVsersion string
 	IP         string
 	Port       int
+	Router     ziface.IRouter
 }
 
-// CallBackToClient 定义当前客户端的handle api
-func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
-	fmt.Println("[Conn Handle] CallBackToClient ...")
-	if _, err := conn.Write(data[:cnt]); err != nil {
-		fmt.Println("write back buf err ", err)
-		return errors.New("CallBackToClient error")
+// NewServer 创建一个服务器句柄
+func NewServer(name string) ziface.IServer {
+	s := &Server{
+		Name:       name,
+		IPVsersion: "tcp4",
+		IP:         "0.0.0.0",
+		Port:       5704,
+		Router:     nil,
 	}
-	return nil
+
+	return s
 }
 
 // Start 开启网络服务
@@ -56,7 +59,7 @@ func (s *Server) Start() {
 				continue
 			}
 
-			dealConn := NewConnection(conn, cid, CallBackToClient)
+			dealConn := NewConnection(conn, cid, s.Router)
 			cid++
 
 			go dealConn.Start()
@@ -82,14 +85,8 @@ func (s *Server) Serve() {
 	}
 }
 
-// NewServer 创建一个服务器句柄
-func NewServer(name string) ziface.IServer {
-	s := &Server{
-		Name:       name,
-		IPVsersion: "tcp4",
-		IP:         "0.0.0.0",
-		Port:       5704,
-	}
-
-	return s
+// AddRouter 添加路由
+func (s *Server) AddRouter(router ziface.IRouter) {
+	s.Router = router
+	fmt.Println("Add Router succ")
 }
