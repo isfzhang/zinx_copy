@@ -8,10 +8,8 @@ import (
 type IConnection interface {
 	Start()
 	Stop()
-	GetTCPConnection() *net.TCPConn
-	GetConnID() uint32
+	TCPConnection() *net.TCPConn
+	ConnID() uint32
 	RemoteAddr() net.Addr
+	SendMsg(msgID uint32, data []byte) error
 }
-
-// HandFunc 统一处理链接业务的接口
-type HandFunc func(*net.TCPConn, []byte, int) error

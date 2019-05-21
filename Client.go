@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"time"
+  "io"
+  "zinx/znet"
 )
 
 func main() {
@@ -17,21 +19,39 @@ func main() {
 		return
 	}
 
-	for i := 0; i < 1; i++ {
-		_, err := conn.Write([]byte("Zinx v03"))
+	for {
+    dp := znet.NewDataPack()
+    msg, _ := dp.Pack(znet.NewMsgPackage(0, []byte("zinx V05 client test message")))
+		_, err := conn.Write(msg)
 		if err != nil {
 			fmt.Println("write error ", err)
 			return
 		}
 
-		buf := make([]byte, 512)
-		cnt, err := conn.Read(buf)
+		headData := make([]byte, dp.HeadLen())
+		if _, err := io.ReadFull(conn, headData); err != nil {
+			fmt.Println("read head error ", err)
+			return 
+		}
+
+		msgHead, err := dp.UnPack(headData)
 		if err != nil {
-			fmt.Println("read buf error ", err)
+			fmt.Println("unpack error ", err)
 			return
 		}
 
-		fmt.Printf("server call back: %s, cnt = %d\n", buf, cnt)
+		if msgHead.DataLen() > 0 {
+      msg := msgHead.(*znet.Message)
+      
+			data := make([]byte, msg.DataLen())
+			if _, err := io.ReadFull(conn, data); err != nil {
+				fmt.Println("read msg data error ", err)
+				return 
+			}
+      
+      fmt.Println("==> Recv Msg: ID =", msg.MsgID(), ", len=", msg.DataLen(), ", data=", string(data))
+      
+		}
 
 		time.Sleep(1 * time.Second)
 	}

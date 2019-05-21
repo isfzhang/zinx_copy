@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"zinx/ziface"
 )
@@ -37,11 +38,16 @@ func init() {
 func (g *GlobalObj) Reload() {
 	data, err := ioutil.ReadFile("conf/zinx.json")
 	if err != nil {
-		panic(err)
+		// file not exists return
+		fmt.Println("读取配置文件失败", err)
+		return
+		// panic(err)
 	}
 
 	err = json.Unmarshal(data, &GlobalObject)
 	if err != nil {
-		panic(err)
+		fmt.Println("解析配置文件失败", err)
+		return
+		// panic(err)
 	}
 }

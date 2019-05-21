@@ -14,7 +14,9 @@ type PingRouter struct {
 // Handle 方法
 func (*PingRouter) Handle(request ziface.IRequest) {
 	fmt.Println("Call PingRouter Handle")
-	_, err := request.GetConnection().GetTCPConnection().Write([]byte("ping...ping...ping\n"))
+
+	fmt.Println("recv from client: msgID= ", request.MsgID(), ", data=", string(request.Data()))
+	err := request.Connection().SendMsg(1, []byte("ping...ping...ping\n"))
 	if err != nil {
 		fmt.Println("call back ping ping ping error")
 	}
