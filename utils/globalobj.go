@@ -9,13 +9,21 @@ import (
 
 // GlobalObj 框架的全局参数
 type GlobalObj struct {
-	TCPServr      ziface.IServer
-	Host          string
-	TCPPort       int
-	Name          string
-	Version       string
-	MaxPacketSize uint32
-	Maxconn       int
+	// Server
+	TCPServr ziface.IServer
+	Host     string
+	TCPPort  int
+	Name     string
+
+	// Zinx
+	Version          string
+	MaxPacketSize    uint32
+	Maxconn          int
+	WorkPoolSize     uint32
+	MaxWorkerTaskLen uint32 // 任务队列长度
+
+	// config file path
+	ConfFilePath string
 }
 
 // GlobalObject 定义全局对象
@@ -23,12 +31,15 @@ var GlobalObject *GlobalObj
 
 func init() {
 	GlobalObject = &GlobalObj{
-		Name:          "ZinxServerApp",
-		Version:       "V04",
-		TCPPort:       5704,
-		Host:          "0.0.0.0",
-		Maxconn:       12000,
-		MaxPacketSize: 4096,
+		Name:             "ZinxServerApp",
+		Version:          "V08",
+		TCPPort:          5704,
+		Host:             "0.0.0.0",
+		Maxconn:          12000,
+		MaxPacketSize:    4096,
+		ConfFilePath:     "conf/zinx.json",
+		WorkPoolSize:     10,
+		MaxWorkerTaskLen: 1024,
 	}
 
 	GlobalObject.Reload()

@@ -37,6 +37,9 @@ func (s *Server) Start() {
 	fmt.Println(utils.GlobalObject.Maxconn)
 
 	go func() {
+		// 启动工作池
+		s.msgHandler.StartWorkerPool()
+
 		addr, err := net.ResolveTCPAddr(s.IPVsersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {
 			fmt.Println("resolve tcp addr err: ", err)
