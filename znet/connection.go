@@ -16,6 +16,7 @@ type Connection struct {
 
 	MsgHandler   ziface.IMsgHandle
 	ExitBuffChan chan bool
+	msgChan      chan []byte // 读写两个协程之间的通信
 }
 
 // NewConnection 创建连接
@@ -26,9 +27,27 @@ func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandl
 		isClosed:     false,
 		MsgHandler:   msgHandler,
 		ExitBuffChan: make(chan bool, 1),
+		msgChan:      make(chan []byte),
 	}
 
 	return c
+}
+
+// StartWriter 处理数据发送到客户端
+func (c *Connection) StartWriter() {
+	defer fmt.Println(c.RemoteAddr().String(), " conn Writer exit!")
+
+	for {
+		select {
+		case data := <-c.msgChan:
+			if _, err := c.conn.Write(data); err != nil {
+				fmt.Println("Send Data error: ", err, " Conn Writer exit")
+				return
+			}
+		case <-c.ExitBuffChan:
+			return
+		}
+	}
 }
 
 // StartReader 处理conn读数据
@@ -77,12 +96,7 @@ func (c *Connection) Start() {
 
 	go c.StartReader()
 
-	for {
-		select {
-		case <-c.ExitBuffChan:
-			return
-		}
-	}
+	go c.StartWriter()
 }
 
 // Stop 停止当前连接
@@ -126,11 +140,7 @@ func (c *Connection) SendMsg(msgID uint32, data []byte) error {
 		return err
 	}
 
-	if _, err := c.conn.Write(msg); err != nil {
-		fmt.Println("write msg id ", msgID, " error")
-		c.ExitBuffChan <- true
-		return err
-	}
+	c.msgChan <- msg
 
 	return nil
 }
