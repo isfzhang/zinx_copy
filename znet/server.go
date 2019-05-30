@@ -14,7 +14,7 @@ type Server struct {
 	IPVsersion string
 	IP         string
 	Port       int
-	Router     ziface.IRouter
+	msgHandler ziface.IMsgHandle
 }
 
 // NewServer 创建一个服务器句柄
@@ -26,7 +26,7 @@ func NewServer() ziface.IServer {
 		IPVsersion: "tcp4",
 		IP:         utils.GlobalObject.Host,
 		Port:       utils.GlobalObject.TCPPort,
-		Router:     nil,
+		msgHandler: MewMsgHandle(),
 	}
 	return s
 }
@@ -62,7 +62,7 @@ func (s *Server) Start() {
 				continue
 			}
 
-			dealConn := NewConnection(conn, cid, s.Router)
+			dealConn := NewConnection(conn, cid, s.msgHandler)
 			cid++
 
 			go dealConn.Start()
@@ -88,8 +88,7 @@ func (s *Server) Serve() {
 	}
 }
 
-// AddRouter 添加路由
-func (s *Server) AddRouter(router ziface.IRouter) {
-	s.Router = router
-	fmt.Println("Add Router succ")
+// AddRouter 路由功能：给当前服务注册一个路由业务方法，供客户端链接处理使用
+func (s *Server) AddRouter(msgID uint32, router ziface.IRouter) {
+	s.msgHandler.AddRouter(msgID, router)
 }

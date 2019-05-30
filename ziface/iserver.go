@@ -4,6 +4,6 @@ package ziface
 type IServer interface {
 	Start()
 	Stop()
-	Serve()                   // 开启业务服务
-	AddRouter(router IRouter) // 路由功能，当前服务注册一个路由业务方法
+	Serve()                                 // 开启业务服务
+	AddRouter(msgID uint32, router IRouter) // 路由功能，当前服务注册一个路由业务方法
 }
