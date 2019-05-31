@@ -38,9 +38,31 @@ func (*HelloRouter) Handle(request ziface.IRequest) {
 	}
 }
 
+// DoConnectionBegin  创建连接的时候执行
+func DoConnectionBegin(conn ziface.IConnection) {
+	fmt.Println("DoConnectionBegin is Called...")
+	err := conn.SendMsg(2, []byte("DoConnection BEGIN..."))
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+// DoConnectionEnd  创建停止的时候执行
+func DoConnectionEnd(conn ziface.IConnection) {
+	fmt.Println("DoConnectionEnd is Called...")
+}
+
 func main() {
 	s := znet.NewServer()
+
+	// 注册连接hook回调函数
+	s.SetOnConnStart(DoConnectionBegin)
+	s.SetOnConnStop(DoConnectionBegin)
+
+	// 配置路由
 	s.AddRouter(0, &PingRouter{})
 	s.AddRouter(1, &HelloRouter{})
+
+	// 开启服务
 	s.Serve()
 }

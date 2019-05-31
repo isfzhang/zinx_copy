@@ -11,26 +11,31 @@ import (
 
 // Connection 连接
 type Connection struct {
-	conn     *net.TCPConn
-	connID   uint32
-	isClosed bool
+	TCPServer ziface.IServer // server归属
+	conn      *net.TCPConn
+	connID    uint32
+	isClosed  bool
 
 	MsgHandler   ziface.IMsgHandle
 	ExitBuffChan chan bool
 	msgChan      chan []byte // 读写两个协程之间的通信
+	msgBuffChan  chan []byte // 有缓冲通道
 }
 
 // NewConnection 创建连接
-func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandle) *Connection {
+func NewConnection(server ziface.IServer, conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandle) *Connection {
 	c := &Connection{
+		TCPServer:    server, // 将隶属的server传递
 		conn:         conn,
 		connID:       connID,
 		isClosed:     false,
 		MsgHandler:   msgHandler,
 		ExitBuffChan: make(chan bool, 1),
 		msgChan:      make(chan []byte),
+		msgBuffChan:  make(chan []byte, utils.GlobalObject.MaxMsgChanLen),
 	}
 
+	c.TCPServer.GetConnMgr().Add(c) //添加当前连接到连接管理器
 	return c
 }
 
@@ -44,6 +49,16 @@ func (c *Connection) StartWriter() {
 			if _, err := c.conn.Write(data); err != nil {
 				fmt.Println("Send Data error: ", err, " Conn Writer exit")
 				return
+			}
+		case data, ok := <-c.msgBuffChan:
+			if ok {
+				if _, err := c.conn.Write(data); err != nil {
+					fmt.Println("Send Buff Data error:, ", err, " Conn Writer exit")
+					return
+				}
+			} else {
+				fmt.Println("msgBuffChan is Closed")
+				break
 			}
 		case <-c.ExitBuffChan:
 			return
@@ -99,10 +114,11 @@ func (c *Connection) StartReader() {
 
 // Start 启动当前连接
 func (c *Connection) Start() {
-
 	go c.StartReader()
-
 	go c.StartWriter()
+
+	// 执行hook方法
+	c.TCPServer.CallOnConnStart(c)
 }
 
 // Stop 停止当前连接
@@ -113,9 +129,17 @@ func (c *Connection) Stop() {
 
 	c.isClosed = true
 
+	// 执行hook方法
+	c.TCPServer.CallOnConnStop(c)
+
 	c.conn.Close()
 	c.ExitBuffChan <- true
+
+	// 从连接管理器删除
+	c.TCPServer.GetConnMgr().Remove(c)
+	// 关闭该连接全部管道
 	close(c.ExitBuffChan)
+	close(c.msgBuffChan)
 }
 
 // TCPConnection 获取原始socket TCPConn
@@ -147,6 +171,24 @@ func (c *Connection) SendMsg(msgID uint32, data []byte) error {
 	}
 
 	c.msgChan <- msg
+
+	return nil
+}
+
+// SendBuffMsg 有缓存方式发送封包后的数据
+func (c *Connection) SendBuffMsg(msgID uint32, data []byte) error {
+	if c.isClosed {
+		return errors.New("Connection closed when send msg")
+	}
+
+	dp := NewDataPack()
+	msg, err := dp.Pack(NewMsgPackage(msgID, data))
+	if err != nil {
+		fmt.Println("Pack error msg id = ", msgID)
+		return err
+	}
+
+	c.msgBuffChan <- msg
 
 	return nil
 }

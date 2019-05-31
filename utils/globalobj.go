@@ -21,7 +21,7 @@ type GlobalObj struct {
 	Maxconn          int
 	WorkPoolSize     uint32
 	MaxWorkerTaskLen uint32 // 任务队列长度
-
+	MaxMsgChanLen    uint32
 	// config file path
 	ConfFilePath string
 }
@@ -40,6 +40,7 @@ func init() {
 		ConfFilePath:     "conf/zinx.json",
 		WorkPoolSize:     10,
 		MaxWorkerTaskLen: 1024,
+		MaxMsgChanLen:    1024,
 	}
 
 	GlobalObject.Reload()
