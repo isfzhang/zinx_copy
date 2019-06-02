@@ -41,6 +41,10 @@ func (*HelloRouter) Handle(request ziface.IRequest) {
 // DoConnectionBegin  创建连接的时候执行
 func DoConnectionBegin(conn ziface.IConnection) {
 	fmt.Println("DoConnectionBegin is Called...")
+
+	conn.SetProperty("test1", "first")
+	conn.SetProperty("test2", "second")
+
 	err := conn.SendMsg(2, []byte("DoConnection BEGIN..."))
 	if err != nil {
 		fmt.Println(err)
@@ -49,6 +53,8 @@ func DoConnectionBegin(conn ziface.IConnection) {
 
 // DoConnectionEnd  创建停止的时候执行
 func DoConnectionEnd(conn ziface.IConnection) {
+	fmt.Println(conn.Property("test1"))
+	fmt.Println(conn.Property("test2"))
 	fmt.Println("DoConnectionEnd is Called...")
 }
 
@@ -57,7 +63,7 @@ func main() {
 
 	// 注册连接hook回调函数
 	s.SetOnConnStart(DoConnectionBegin)
-	s.SetOnConnStop(DoConnectionBegin)
+	s.SetOnConnStop(DoConnectionEnd)
 
 	// 配置路由
 	s.AddRouter(0, &PingRouter{})
